@@ -19,24 +19,16 @@ struct memoryInfo
     int cached;
 };
 
-/*
-float totalTime = (float) utime + stime;
-    jiffies = totalTime - lastJiffies;
-    lastJiffies = totalTime;
-
-    //CALCULA PERCENTUAL DE PROCESSAMENTO   //2 delay do update da tela
-    cpuPercent = (float) ((jiffies / (HZ * 2)) * 100);
-*/
-
 struct process_struct
 {
     int pid; //pid do processo
-    char nome[15]; //nome do processo
+/*
     unsigned long userJiffies; //jiffies em modo usuario
     unsigned long kernelJiffies; //jiffies em modo kernel
     unsigned long totalJiffies; //total atual dos jiffies modo usuario+kernel
     unsigned long ultimaConsulta; //guarda valor do ultimo total
     unsigned long realJiffies; //valor resultante de jiffies entre a ultimaConsulta e o total atual
+*/
     
     float jiffies;
     float lastJiffies;
@@ -46,6 +38,9 @@ struct process_struct
     float tempoDecorrido; //tempo decorrido desde a ultima consulta
     int intervaloCaptura; //intervalo de atualização das informacoes
     int ativo;
+    int delay;
+    char nome[15]; //nome do processo
+    
 };
 
 struct process_struct processes[50];
@@ -55,13 +50,13 @@ void gotoxy(int x, int y)
     printf("%c[%d;%df", 0x1B, y, x);
 }
 
-int processMemory(pid_t pid)
+void processMemory(int n)
 {
     FILE* statm;
     int resident, size;
     char filename[24];
 
-    snprintf(filename, sizeof (filename), "/proc/%d/statm", (int) pid);
+    snprintf(filename, sizeof (filename), "/proc/%d/statm", processes[n].pid);
 
     statm = fopen(filename, "r");
     fscanf
@@ -74,7 +69,7 @@ int processMemory(pid_t pid)
             );
     fclose(statm);
     resident = (resident * PAGE_SIZE) * 100;
-    return resident;
+    processes[n].memoria = (float) resident;
 }
 
 void processCpu(int n)
@@ -110,7 +105,7 @@ void processCpu(int n)
     processes[n].lastJiffies = totalTime;
 
     //CALCULA PERCENTUAL DE PROCESSAMENTO   //2 delay do update da tela
-    processes[n].cpuPercent = (float) ((processes[n].jiffies / (HZ * 2)) * 100);
+    processes[n].cpuPercent = (float) ((processes[n].jiffies / (HZ * processes[n].delay)) * 100);
 }
 
 struct memoryInfo totalMemory()
@@ -146,42 +141,47 @@ struct memoryInfo totalMemory()
 
 int main(int argc, char* argv[])
 {
-    pid_t pid = (pid_t) atoi(argv[1]);
+    // ultimo parametro = delay
+    // os primeiros paramentros sao os pids
+    int delay = atoi(argv[argc-1]);
+    int i;
+
+    for (i = 1; i < argc - 1; i++)
+    {        
+        processes[i].pid = (int) atoi(argv[i]);        
+        processes[i].delay = delay;
+        processCpu(i);
+    }
+        
+    //processes[1].pid = (int) pid;
+    //processes[1].delay = (int) atoi(argv[2]);   
     
-    processes[1].pid = (int) pid;
-    processCpu(1);
+
     
     while (1)
     {
-        
-        sleep(2);
-        processCpu(1);
-        int pMemory = processMemory(pid);
+        sleep( delay );
+        for (i = 1; i < argc - 1; i++)
+        {
+            processCpu(i);
+            processMemory(i);
 
-        struct memoryInfo memoria = totalMemory();
+            struct memoryInfo memoria = totalMemory();
 
-        int tMemory = memoria.total;
-        int tMemoryFree = memoria.free;
-        int tCached = memoria.cached;
-        int tBuffers = memoria.buffers;
+            int tMemory = memoria.total;
 
-        
-        
-        gotoxy(2, 3);
-        
-        printf("Memoria %0.02f%% - Processo id: %d \n", (float) pMemory / tMemory, pid);
-        
-        gotoxy(2, 4);
-        printf("CPU %0.02f%% - Processo id: %d \n", processes[1].cpuPercent, pid);
-
-        gotoxy(2, 5);
-        printf("Memoria total %0.2fMB  \n", (float) (tMemory / 1024));
-
-        gotoxy(2, 6);
-        printf("Memoria livre %0.2fMB  \n", (float) ((tMemoryFree / 1024) + (tCached / 1024) + (tBuffers / 1024)));
-        
+            gotoxy(2, 3+i*2);
+            printf("Memoria %0.02f%% - Processo id: %d \n", (float) processes[i].memoria / tMemory, processes[i].pid);
+            gotoxy(2, 4+i*2);
+            printf("CPU %0.02f%%  - Processo id: %d \n", processes[i].cpuPercent, processes[i].pid);
+            gotoxy(2, 5+i*2);
+            //printf("Memoria total %0.2fMB  \n", (float) (tMemory / 1024));
+            //gotoxy(2, 6);
+            //printf("Memoria livre %0.2fMB  \n", (float) ((tMemoryFree / 1024) + (tCached / 1024) + (tBuffers / 1024)));
+        }
 
     }
+
     return 0;
 }
 
