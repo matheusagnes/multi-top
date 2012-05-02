@@ -19,28 +19,20 @@ struct memoryInfo
     int cached;
 };
 
+// Jiffies -> quantidade de fatias que o processo usa do processador, tempo de cada jiffie é definido pelo HZ
+// LastJiffis -> é o valor que tinha na leitura anterior
+// processes[n].jiffies -> fatias atuais da leitura, diferença entre o total e o last
+// resident é o total de paginas de memoria
+// Pagesize valor de cada pagina
 struct process_struct
 {
-    int pid; //pid do processo
-/*
-    unsigned long userJiffies; //jiffies em modo usuario
-    unsigned long kernelJiffies; //jiffies em modo kernel
-    unsigned long totalJiffies; //total atual dos jiffies modo usuario+kernel
-    unsigned long ultimaConsulta; //guarda valor do ultimo total
-    unsigned long realJiffies; //valor resultante de jiffies entre a ultimaConsulta e o total atual
-*/
-    
+    int pid; //pid do processo   
     float jiffies;
     float lastJiffies;
-    float cpuPercent;
-    
+    float cpuPercent;   
     float memoria; //valor de memoria utilizado
-    float tempoDecorrido; //tempo decorrido desde a ultima consulta
-    int intervaloCaptura; //intervalo de atualização das informacoes
-    int ativo;
     int delay;
     char nome[15]; //nome do processo
-    
 };
 
 struct process_struct processes[50];
@@ -109,7 +101,7 @@ void processCpu(int n)
     
     processes[n].lastJiffies = totalTime;
 
-    //CALCULA PERCENTUAL DE PROCESSAMENTO   //2 delay do update da tela
+    //CALCULA PERCENTUAL DE PROCESSAMENTO   // delay do update da tela
     processes[n].cpuPercent = (float) ((processes[n].jiffies / (HZ * processes[n].delay)) * 100);
 }
 
