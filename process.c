@@ -11,6 +11,7 @@ given by PID. */
 
 #define PAGE_SIZE ( sysconf(_SC_PAGESIZE) / 1024 )
 //bytes
+// total memoria do pc
 struct memoryInfo
 {
     int total;
@@ -22,8 +23,8 @@ struct memoryInfo
 // Jiffies -> quantidade de fatias que o processo usa do processador, tempo de cada jiffie é definido pelo HZ
 // LastJiffis -> é o valor que tinha na leitura anterior
 // processes[n].jiffies -> fatias atuais da leitura, diferença entre o total e o last
-// resident é o total de paginas de memoria
-// Pagesize valor de cada pagina
+// resident é o total de paginas de memoria do processo
+// Pagesize valor de cada pagina do processo
 struct process_struct
 {
     int pid; //pid do processo   
@@ -95,7 +96,9 @@ void processCpu(int n)
     // Jiffies -> quantidade de fatias que o processo usa do processador, tempo de cada jiffie é definido pelo HZ
     // LastJiffi -> é o valor que tinha na leitura anterior
     // processes[n].jiffies -> fatias atuais da leitura, diferença entre o total e o last
-
+    // utime quantidade de tempo que o processo foi escalonado em modo usuario
+    // stime quantidade de tempo que o processo foi escalonado em modo kernel
+    // totalTime tempo total do processo
     float totalTime = (float) utime + stime;
     processes[n].jiffies = totalTime - processes[n].lastJiffies;
     
